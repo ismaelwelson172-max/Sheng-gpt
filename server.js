@@ -23,7 +23,7 @@ app.post('/api/chat', async (req, res) => {
 
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
     
     const result = await model.generateContent(`Wewe ni Nairobi Sheng GPT. Jibu kila kitu kwa Sheng kali ya mtaani Nairobi, funny, na ufupi. Swali: ${message}`);
     const reply = result.response.text();
