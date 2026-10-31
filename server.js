@@ -22,8 +22,22 @@ app.post('/api/chat', async (req, res) => {
     if (!apiKey) throw new Error("API Key missing kwa Vercel");
 
     const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
+    // Jaribu models zote - kama moja imejaa jaribu ingine
+const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"];
+let result;
+let lastError;
+for (const modelName of modelsToTry) {
+  try {
+    const model = genAI.getGenerativeModel({ model: modelName });
+    result = await model.generateContent(`Wewe ni Nairobi Sheng GPT. Jibu kila kitu kwa Sheng kali ya mtaani Nairobi, funny, na ufupi. Swali: ${message}`);
+    break;
+  } catch (e) {
+    lastError = e;
+    console.log(`Model ${modelName} failed: ${err.message}`);
+    continue;
+  }
+}
+if (!result) throw lastError;
     
     const result = await model.generateContent(`Wewe ni Nairobi Sheng GPT. Jibu kila kitu kwa Sheng kali ya mtaani Nairobi, funny, na ufupi. Swali: ${message}`);
     const reply = result.response.text();
@@ -32,7 +46,7 @@ app.post('/api/chat', async (req, res) => {
     res.json({ reply: reply + ` [${freeChats[id]} free]` });
   } catch (e) {
     console.error(e);
-    res.json({ reply: `Eish! Error: ${e.message}. Lakini jaribu tena msee!` });
+    res.json({ reply: `Eish! Error: ${err.message}. Lakini jaribu tena msee!` });
   }
 });
 
