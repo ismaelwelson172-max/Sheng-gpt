@@ -18,7 +18,7 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.Shang_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.Sheng_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("API Key missing kwa Vercel");
 
     const { GoogleGenerativeAI } = require('@google/generative-ai');
