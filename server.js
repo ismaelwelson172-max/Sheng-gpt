@@ -14,37 +14,27 @@ app.post('/api/chat', async (req, res) => {
   if (!freeChats[id]) freeChats[id] = 10;
 
   if (freeChats[id] <= 0) {
-    return res.json({ reply: "Msee, free 10 zimeisha! Lipisha 99 bob na M-Pesa uendelee!", paywall: true });
+    return res.json({ reply: "Msee, free 10 zimeisha! Lipisha 99 bob na M-Pesa uendelee!" });
   }
 
   try {
     const apiKey = process.env.Sheng_API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("API Key missing kwa Vercel");
+    if (!apiKey) throw new Error("API Key missing kwa Vercel!");
 
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    // Jaribu models zote - kama moja imejaa jaribu ingine
-const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-3.8-flash"];
-let result;
-let lastError;
-for (const modelName of modelsToTry) {
-  try {
-    const model = genAI.getGenerativeModel({ model: modelName });
-    result = await model.generateContent(`Wewe ni Nairobi Sheng GPT. Jibu kila kitu kwa Sheng kali ya mtaani Nairobi, funny, na ufupi. Swali: ${message}`);
-    break;
-  } catch (e) {
-    lastError = e;
-    console.log(`Model ${modelName} failed: ${err.message}`);
-    continue;
-  }
-}
-if (!result) throw lastError;
-  
-const reply = result.response.text();
+    const { GoogleGenerativeAI } = require("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(apiKey);
+    
+    // Model inafanya 100% leo - si 3.8
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
+    
+    const result = await model.generateContent(`Wewe ni Nairobi Sheng GPT. Jibu kila kitu kwa Sheng kali ya mtaani Nairobi, funny na ufupi. Usiongee Kiswahili sanifu. User: ${message}`);
+    const reply = result.response.text();
+
     freeChats[id]--;
     res.json({ reply: reply + ` [${freeChats[id]} free]` });
   } catch (e) {
     console.error(e);
-    res.json({ reply: `Eish! Error: ${err.message}. Lakini jaribu tena msee!` });
+    res.json({ reply: `Eish! Error: ${e.message}. Jaribu tena msee!` });
   }
 });
 
