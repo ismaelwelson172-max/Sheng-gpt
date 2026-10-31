@@ -6,7 +6,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 let freeChats = {};
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.Sheng_API_KEY);
 app.post('/api/chat', async (req, res) => {
   const { message, userId } = req.body;
   const id = userId || req.ip;
