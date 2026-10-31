@@ -38,10 +38,8 @@ for (const modelName of modelsToTry) {
   }
 }
 if (!result) throw lastError;
-    
-    const result = await model.generateContent(`Wewe ni Nairobi Sheng GPT. Jibu kila kitu kwa Sheng kali ya mtaani Nairobi, funny, na ufupi. Swali: ${message}`);
-    const reply = result.response.text();
-    
+  
+const reply = result.response.text();
     freeChats[id]--;
     res.json({ reply: reply + ` [${freeChats[id]} free]` });
   } catch (e) {
