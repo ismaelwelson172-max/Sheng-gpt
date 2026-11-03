@@ -1,1 +1,297 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nairobi Sheng GPT</title><style>body{margin:0;font-family:system-ui;background:#0a0a0a;color:#fff;display:flex;flex-direction:column;height:100vh}header{padding:16px;text-align:center;border-bottom:1px solid #222}#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.msg{max-width:80%;padding:10px 14px;border-radius:14px}.user{align-self:flex-end;background:#ff6a00;color:#000}.bot{align-self:flex-start;background:#1e1e1e}#bar{display:flex;gap:8px;padding:12px;border-top:1px solid #222;background:#111}#bar input{flex:1;padding:12px;border-radius:20px;border:none;background:#222;color:#fff}#bar button{padding:12px 18px;border-radius:20px;border:none;background:#ff6a00;font-weight:bold}</style></head><body><header><h1>🔥 Nairobi Sheng GPT</h1><p>10 free, then KSh 99 M-Pesa</p></header><div id="chat"></div><div id="bar"><input id="msg" placeholder="Andika kwa Sheng..."><button onclick="send()">Tuma</button></div><script>let mpesaCode=localStorage.getItem('mpesaCode')||'';const chatEl=document.getElementById('chat'),msgEl=document.getElementById('msg');function addMsg(t,w){const d=document.createElement('div');d.className='msg '+w;d.innerText=t;chatEl.appendChild(d);chatEl.scrollTop=chatEl.scrollHeight}function showPaywall(d){const e=document.createElement('div');e.className='msg bot';e.innerHTML=`<b>${d.message}</b><br><br><input id="phone" placeholder="07..."><button onclick="stk()">Lipa 99</button><br><input id="code" placeholder="Weka Code Q..."><button onclick="unlock()">Unlock</button>`;chatEl.appendChild(e)}async function send(){const text=msgEl.value.trim();if(!text)return;addMsg(text,'user');msgEl.value='';const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,mpesaCode})});const data=await r.json();if(data.needPayment)showPaywall(data);else addMsg(data.reply+" ["+data.remaining+"]",'bot')}async function stk(){const phone=document.getElementById('phone').value;const r=await fetch('/api/mpesa/stk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})});const d=await r.json();alert(d.message)}function unlock(){const c=document.getElementById('code').value.trim();if(!c.toUpperCase().startsWith('Q'))return alert('Code lazima ianze na Q');mpesaCode=c;localStorage.setItem('mpesaCode',c);addMsg('Sawa! Uko na unlimited!','bot')}msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')send()});addMsg('Poa! Mimi ni Nairobi Sheng GPT. Uliza kitu - 10 free!','bot');</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔥 Nairobi Sheng GPT</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0a;
+  color:white;
+  font-family:'Outfit',sans-serif;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
+/* Graffiti Background */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255,107,0,0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(0,255,100,0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255,0,50,0.08) 0%, transparent 60%),
+    url('https://images.unsplash.com/photo-1515405295579-ba7b45403062?q=80&w=1000') center/cover;
+  filter:blur(1px) brightness(0.4);
+  z-index:-2;
+}
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(10,10,10,0.95) 100%);
+  z-index:-1;
+}
+
+/* Header Glass */
+.header{
+  backdrop-filter: blur(20px);
+  background: rgba(20,20,20,0.85);
+  border-bottom:1.5px solid rgba(255,107,0,0.3);
+  padding:14px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{
+  width:42px;height:42px;
+  background: linear-gradient(135deg,#FF6B00,#FFD600);
+  border-radius:12px;
+  display:grid;place-items:center;
+  font-size:22px;
+  box-shadow:0 0 20px rgba(255,107,0,0.5);
+}
+.header h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:20px;font-weight:800;
+  letter-spacing:-0.5px;
+}
+.header p{
+  font-size:12px;
+  opacity:0.7;
+  margin-top:2px;
+}
+.m-pesa-badge{
+  background:#00A651;
+  color:white;
+  font-size:10px;
+  font-weight:800;
+  padding:2px 6px;
+  border-radius:6px;
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  margin-left:4px;
+}
+
+/* Chat Area */
+#chat{
+  flex:1;
+  overflow-y:auto;
+  padding:18px 14px 20px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  scroll-behavior:smooth;
+}
+#chat::-webkit-scrollbar{width:0}
+
+/* Bubbles */
+.bubble{
+  max-width:82%;
+  padding:14px 16px;
+  border-radius:20px;
+  font-size:15px;
+  line-height:1.45;
+  position:relative;
+  animation: pop 0.3s ease;
+  word-wrap:break-word;
+}
+@keyframes pop{from{transform:scale(0.9) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.bot{
+  background: linear-gradient(135deg,#FF7A00,#FF9A00);
+  color:#111;
+  font-weight:500;
+  border-bottom-left-radius:6px;
+  box-shadow:0 8px 20px rgba(255,107,0,0.35);
+  align-self:flex-start;
+}
+.user{
+  background: rgba(30,30,32,0.95);
+  border:1px solid rgba(255,255,255,0.12);
+  backdrop-filter:blur(10px);
+  border-bottom-right-radius:6px;
+  align-self:flex-end;
+}
+.bot::before{
+  content:'🔥';
+  position:absolute;
+  left:-8px;bottom:-6px;
+  background:#111;
+  width:26px;height:26px;
+  border-radius:50%;
+  display:grid;place-items:center;
+  font-size:12px;
+  border:2px solid #FF7A00;
+}
+
+/* Counter */
+#counter{
+  text-align:center;
+  font-size:12px;
+  background:rgba(20,20,20,0.9);
+  border:1px solid rgba(0,255,100,0.3);
+  width:fit-content;
+  margin:0 auto;
+  padding:6px 14px;
+  border-radius:30px;
+  color:#8aff8a;
+}
+
+/* Stickers Bar */
+.stickers{
+  display:flex;
+  gap:8px;
+  padding:0 14px 8px;
+  overflow-x:auto;
+}
+.stickers::-webkit-scrollbar{width:0}
+.stick{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
+  padding:5px 10px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+/* Input Area */
+.input-wrap{
+  backdrop-filter: blur(20px);
+  background: rgba(18,18,18,0.95);
+  border-top:1px solid rgba(255,255,255,0.08);
+  padding:12px 12px max(12px, env(safe-area-inset-bottom));
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+#msgInput{
+  flex:1;
+  background:rgba(255,255,255,0.08);
+  border:1.5px solid rgba(255,255,255,0.12);
+  border-radius:26px;
+  padding:13px 18px;
+  color:white;
+  font-size:15px;
+  outline:none;
+  font-family:'Outfit';
+}
+#msgInput:focus{border-color:#FF7A00;background:rgba(255,255,255,0.12)}
+#sendBtn{
+  background: linear-gradient(135deg,#FF7A00,#FF6B00);
+  color:#111;
+  border:none;
+  border-radius:26px;
+  padding:13px 22px;
+  font-weight:800;
+  font-size:15px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  box-shadow:0 4px 15px rgba(255,107,0,0.4);
+}
+#sendBtn:active{transform:scale(0.95)}
+.mic{
+  width:44px;height:44px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:50%;
+  display:grid;place-items:center;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🔥</div>
+    <div>
+      <h1>Nairobi Sheng GPT</h1>
+      <p>10 free, then KSh 99 <span class="m-pesa-badge">M M-PESA</span></p>
+    </div>
+  </div>
+  <div style="opacity:0.6">●●●</div>
+</div>
+
+<div id="chat">
+  <div class="bubble bot">
+    <b>Poa! Karibu Nairobi Sheng GPT 🔥</b><br><br>
+    Niko on. Uliza chochote kwa Sheng, I'll break it down for you. Niko na <span id="wordCount">454+</span> Sheng words! Try: <b>Chude, Goshodi, Govo, Nganya</b>
+  </div>
+</div>
+
+<div id="counter">⚡ 10 free msgs • Upgrade for unlimited</div>
+
+<div class="stickers">
+  <div class="stick">🔥 NGANYA</div>
+  <div class="stick">KAZI NI KAZI 💚</div>
+  <div class="stick">🇰🇪 POA</div>
+  <div class="stick">MTAANI 🏚️</div>
+  <div class="stick">FRESH 🔥</div>
+</div>
+
+<div class="input-wrap">
+  <div class="mic">🎤</div>
+  <input id="msgInput" placeholder="Andika kwa Sheng..." autocomplete="off">
+  <button id="sendBtn">✈️ Tuma</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('msgInput');
+const btn = document.getElementById('sendBtn');
+const counter = document.getElementById('counter');
+let remaining = 10;
+
+async function send(){
+  const text = input.value.trim();
+  if(!text) return;
+  // user bubble
+  const u = document.createElement('div');
+  u.className='bubble user';
+  u.textContent=text;
+  chat.appendChild(u);
+  input.value='';
+  chat.scrollTop=chat.scrollHeight;
+
+  // typing
+  const t = document.createElement('div');
+  t.className='bubble bot';
+  t.textContent='Niko kuchora... ✍️';
+  chat.appendChild(t);
+  chat.scrollTop=chat.scrollHeight;
+
+  try{
+    const res = await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text})
+    });
+    const data = await res.json();
+    t.textContent = data.reply || 'Poa msee!';
+    if(data.remaining!==undefined){
+      remaining = data.remaining;
+      counter.textContent = `⚡ ${remaining} free msgs remaining • Upgrade for unlimited`;
+    }
+  }catch(e){
+    t.textContent='Eish! Network iko down kidogo. Jaribu tena.';
+  }
+  chat.scrollTop=chat.scrollHeight;
+}
+btn.onclick=send;
+input.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+</script>
+</body>
+</html>
