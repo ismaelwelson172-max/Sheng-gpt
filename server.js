@@ -8,70 +8,64 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
-const MODELS = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-1.0-pro"];
+const MODELS = ["gemini-1.5-flash-8b", "gemini-1.5-flash"];
 
-// === LOAD SHENG 1000+ WORDS FROM YOUR 3 FILES ===
 let SHENG_DICT = {};
 try {
-  const f1 = JSON.parse(fs.readFileSync('./data/sheng-1000.json', 'utf8'));
-  const f2 = JSON.parse(fs.readFileSync('./data/sheng-part2.json', 'utf8'));
-  const f3 = JSON.parse(fs.readFileSync('./data/sheng-part3.json', 'utf8'));
+  const basePath = path.join(__dirname, 'data');
+  console.log("Loading from:", basePath);
+  const f1Path = path.join(basePath, 'sheng-1000.json');
+  const f2Path = path.join(basePath, 'sheng-part2.json');
+  const f3Path = path.join(basePath, 'sheng-part3.json');
+  
+  const f1 = JSON.parse(fs.readFileSync(f1Path, 'utf8'));
+  const f2 = fs.existsSync(f2Path) ? JSON.parse(fs.readFileSync(f2Path, 'utf8')) : {};
+  const f3 = fs.existsSync(f3Path) ? JSON.parse(fs.readFileSync(f3Path, 'utf8')) : {};
+  
   SHENG_DICT = { ...f1, ...f2, ...f3 };
-  console.log(`✅ Sheng dictionary loaded: ${Object.keys(SHENG_DICT).length} words!`);
+  console.log(`✅ LOADED: ${Object.keys(SHENG_DICT).length} Sheng words! Example: nganya = ${SHENG_DICT['nganya'] || SHENG_DICT['Nganya']}`);
 } catch (e) {
-  console.log("Error loading Sheng dict:", e.message);
-  // fallback ya zamani kama file hazipatikani
-  SHENG_DICT = {
-    "sasa msee": "Sasa msee! What's up bro? 'Sasa' = Now/What's up, 'Msee' = Guy/Bro. Eastlands greeting.",
-    "niaje": "Niaje - How are you? / What's up?",
-    "msee": "Msee = Guy / Bro",
-    "poa": "Poa = Cool / Fine",
-    "noma": "Noma = Cool / Heavy / Serious"
-  };
+  console.log("❌ Error loading Sheng dict:", e.message);
+  console.log(e.stack);
 }
 
-let chatCount = {}; // simple counter
-
 app.post('/api/chat', async (req, res) => {
-  const { message, mpesaCode } = req.body;
-  const userText = (message || "").toString();
-
-  // Check paywall - kama code iko sawa, unlimited
-  const isUnlimited = mpesaCode && mpesaCode.toUpperCase().startsWith('Q');
-
-  // Fast local - kama ni neno moja tu la Sheng
-  const lower = userText.toLowerCase().trim();
-  if (SHENG_DICT[lower] || lower.split(' ').length <= 2) {
-    const localDef = SHENG_DICT[lower];
-    if (localDef) {
-      return res.json({ reply: localDef, remaining: isUnlimited ? 999 : 5 });
+  const userText = (req.body.message || "").toString().trim();
+  const lower = userText.toLowerCase();
+  
+  // 1. Check dictionary DIRECT - hii ndio muhimu!
+  if (SHENG_DICT[lower]) {
+    return res.json({ reply: `${lower} = ${SHENG_DICT[lower]} [Local Dict - ${Object.keys(SHENG_DICT).length} words]`, remaining: 5 });
+  }
+  // Check kama key iko na case tofauti
+  for (let k in SHENG_DICT) {
+    if (k.toLowerCase() === lower) {
+      return res.json({ reply: `${k} = ${SHENG_DICT[k]} [Local Dict]`, remaining: 5 });
+    }
+  }
+  // Check kama neno liko ndani ya sentence
+  for (let k in SHENG_DICT) {
+    if (lower.includes(k.toLowerCase()) && k.length > 2) {
+      return res.json({ reply: `${k} = ${SHENG_DICT[k]}`, remaining: 5 });
     }
   }
 
+  // 2. Gemini kama backup
   for (let modelName of MODELS) {
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(`You are Nairobi Sheng GPT. Short street explanation for: "${userText}". Use Sheng dictionary: ${JSON.stringify(SHENG_DICT).slice(0,8000)}. Reply in Sheng + English mix, Eastlands vibe, 2-3 sentences max.`);
+      const result = await model.generateContent(`You are Nairobi Sheng GPT. Explain Sheng word "${userText}" in 1 sentence Sheng + English. Use this dict: ${JSON.stringify(SHENG_DICT).slice(0,4000)}`);
       const text = result.response.text();
-      return res.json({ reply: text, remaining: isUnlimited ? 999 : 9, model: modelName });
-    } catch (e) {
-      console.log(modelName + ' failed: ' + e.message);
-      await new Promise(r => setTimeout(r, 500));
-    }
+      return res.json({ reply: text, remaining: 5, model: modelName });
+    } catch (e) { console.log(modelName + ' fail ' + e.message); }
   }
 
-  // Fallback - HAINIZI BUDISHA UNDEFINED TENA!
-  let fallback = SHENG_DICT[lower];
-  if (!fallback) {
-    for (let k in SHENG_DICT) { if (lower.includes(k)) { fallback = SHENG_DICT[k]; break; } }
-  }
-  if (!fallback) fallback = `Poa msee! "${userText}" - Nimekuelewa! Gemini iko busy kidogo, but tuko mtaani! Uliza neno ingine ya Sheng!`;
-
-  return res.json({ reply: fallback, remaining: isUnlimited ? 999 : 5 });
+  // 3. Last fallback
+  return res.json({ reply: `Poa! "${userText}" bado sija-add vizuri. Lakini dictionary iko na ${Object.keys(SHENG_DICT).length} words! Jaribu: ganji, momo, thao, keja, supu, doh.`, remaining: 5 });
 });
 
 app.post('/api/mpesa/stk', async (req, res) => {
-  res.json({ message: "STK sent - Ingiza code unayoanza na 'Q'" });
+  res.json({ message: "STK sent" });
 });
 
 app.get('*', (req, res) => {
